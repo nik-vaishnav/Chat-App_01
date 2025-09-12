@@ -95,39 +95,40 @@ export const apiService = {
     }
   },
 
-login: async ({ email, password }) => {
-  try {
-    const res = await API.post('/auth/login', { email, password });
+  login: async ({ email, password }) => {
+    try {
+      const res = await API.post('/auth/login', { email, password });
+      console.log('Full API response:', res.data);
 
-    if (!res.data || !res.data.data) {
-      throw new Error('Invalid login response from server');
+      let userData, token;
+      if (res.data.data) {
+        userData = res.data.data.user;
+        token = res.data.data.token;
+      } else {
+        userData = res.data.user;
+        token = res.data.token;
+      }
+
+      if (token && userData) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('name', userData.name || '');
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        
+        // Connect socket - imp  after successful login
+        socketService.connect(token);
+      }
+
+      return {
+        success: true,
+        user: userData,
+        token: token,
+        message: res.data.message
+      };
+    } catch (err) {
+      console.error('Login API error:', err);
+      throw err;
     }
-
-    const { user, token } = res.data.data;
-
-    if (!user || !token) {
-      throw new Error('Invalid login response from server');
-    }
-
-    // Save to localStorage
-    localStorage.setItem('token', token);
-    localStorage.setItem('name', user.name || '');
-    localStorage.setItem('currentUser', JSON.stringify(user));
-
-    // Connect socket
-    socketService.connect(token);
-
-    return {
-      success: true,
-      user,
-      token,
-      message: res.data.message
-    };
-  } catch (err) {
-    console.error('Login API error:', err);
-    throw new Error(err.response?.data?.message || err.message || 'Login failed');
-  }
-},
+  },
 
   logout: async () => {
     try {
