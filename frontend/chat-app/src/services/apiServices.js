@@ -99,15 +99,15 @@ login: async ({ email, password }) => {
   try {
     const res = await API.post('/auth/login', { email, password });
 
-    // Extract data from backend response
-    const data = res.data.data;
-
-    if (!data || !data.user || !data.token) {
+    if (!res.data || !res.data.data) {
       throw new Error('Invalid login response from server');
     }
 
-    const user = data.user;
-    const token = data.token;
+    const { user, token } = res.data.data;
+
+    if (!user || !token) {
+      throw new Error('Invalid login response from server');
+    }
 
     // Save to localStorage
     localStorage.setItem('token', token);
