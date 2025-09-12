@@ -98,33 +98,31 @@ export const apiService = {
 login: async ({ email, password }) => {
   try {
     const res = await API.post('/auth/login', { email, password });
-    console.log('Full API response:', res.data);
 
-    // Normalize backend response
-    const user = res.data?.data?.user || res.data?.user || null;
-    const token = res.data?.data?.token || res.data?.token || null;
-
-    if (!user || !token) {
-      throw new Error('Invalid login response format from server');
+    const { data } = res.data; // <-- grab the `data` object from backend
+    if (!data || !data.user || !data.token) {
+      throw new Error('Invalid login response from server');
     }
 
-    // Persist to localStorage
+    const user = data.user;
+    const token = data.token;
+
+    // Save token & user in localStorage
     localStorage.setItem('token', token);
     localStorage.setItem('name', user.name || '');
     localStorage.setItem('currentUser', JSON.stringify(user));
 
-    // Connect socket after successful login
+    // Connect socket after login
     socketService.connect(token);
 
     return {
       success: true,
       user,
       token,
-      message: res.data?.message || 'Login successful'
+      message: res.data.message
     };
   } catch (err) {
-    console.error('Login API error:', err);
-    throw err;
+    throw new Error(err.response?.data?.message || err.message || 'Login failed');
   }
 },
 
