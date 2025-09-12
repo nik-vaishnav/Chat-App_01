@@ -99,7 +99,9 @@ login: async ({ email, password }) => {
   try {
     const res = await API.post('/auth/login', { email, password });
 
-    const { data } = res.data; // <-- grab the `data` object from backend
+    // Extract data from backend response
+    const data = res.data.data;
+
     if (!data || !data.user || !data.token) {
       throw new Error('Invalid login response from server');
     }
@@ -107,12 +109,12 @@ login: async ({ email, password }) => {
     const user = data.user;
     const token = data.token;
 
-    // Save token & user in localStorage
+    // Save to localStorage
     localStorage.setItem('token', token);
     localStorage.setItem('name', user.name || '');
     localStorage.setItem('currentUser', JSON.stringify(user));
 
-    // Connect socket after login
+    // Connect socket
     socketService.connect(token);
 
     return {
@@ -122,10 +124,10 @@ login: async ({ email, password }) => {
       message: res.data.message
     };
   } catch (err) {
+    console.error('Login API error:', err);
     throw new Error(err.response?.data?.message || err.message || 'Login failed');
   }
 },
-
 
   logout: async () => {
     try {
