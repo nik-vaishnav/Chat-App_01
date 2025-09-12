@@ -95,40 +95,39 @@ export const apiService = {
     }
   },
 
-  login: async ({ email, password }) => {
-    try {
-      const res = await API.post('/auth/login', { email, password });
-      console.log('Full API response:', res.data);
+login: async ({ email, password }) => {
+  try {
+    const res = await API.post('/auth/login', { email, password });
+    console.log('Full API response:', res.data);
 
-      let userData, token;
-      if (res.data.data) {
-        userData = res.data.data.user;
-        token = res.data.data.token;
-      } else {
-        userData = res.data.user;
-        token = res.data.token;
-      }
+    // Normalize backend response
+    const user = res.data?.data?.user || res.data?.user || null;
+    const token = res.data?.data?.token || res.data?.token || null;
 
-      if (token && userData) {
-        localStorage.setItem('token', token);
-        localStorage.setItem('name', userData.name || '');
-        localStorage.setItem('currentUser', JSON.stringify(userData));
-        
-        // Connect socket - imp  after successful login
-        socketService.connect(token);
-      }
-
-      return {
-        success: true,
-        user: userData,
-        token: token,
-        message: res.data.message
-      };
-    } catch (err) {
-      console.error('Login API error:', err);
-      throw err;
+    if (!user || !token) {
+      throw new Error('Invalid login response format from server');
     }
-  },
+
+    // Persist to localStorage
+    localStorage.setItem('token', token);
+    localStorage.setItem('name', user.name || '');
+    localStorage.setItem('currentUser', JSON.stringify(user));
+
+    // Connect socket after successful login
+    socketService.connect(token);
+
+    return {
+      success: true,
+      user,
+      token,
+      message: res.data?.message || 'Login successful'
+    };
+  } catch (err) {
+    console.error('Login API error:', err);
+    throw err;
+  }
+},
+
 
   logout: async () => {
     try {
