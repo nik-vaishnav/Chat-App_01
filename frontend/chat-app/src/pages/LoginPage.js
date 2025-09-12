@@ -61,8 +61,9 @@ const LoginPage = () => {
     try {
       const response = await apiService.login({ email, password });
 
-      const { user, token } = response || {};
-      if (!user || !token) throw new Error('Invalid login response.');
+const { user, token } = response;
+if (!user || !token) throw new Error('Invalid login response.');
+
 
       dispatch({ type: 'SET_USER', payload: { user, token } });
       localStorage.setItem('token', token);
