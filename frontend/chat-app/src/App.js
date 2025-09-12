@@ -12,6 +12,10 @@ import ChatPage from './pages/ChatPage';
 import AboutPage from './pages/AboutPage';
 import FriendsPage from './pages/FriendsPage';
 
+import PrivacyPage from './pages/PrivacyPage';
+import ContactPage from './pages/ContactPage';
+
+
 function App() {
   return (
     <Routes>
@@ -26,6 +30,9 @@ function App() {
       <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
       <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path= "/privacy" element={<PrivacyPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+
     </Routes>
   );
 }

@@ -40,7 +40,7 @@ const LogoutPage = () => {
             <Spinner /> Logging you out...
           </>
         ) : (
-          <>You are now logged out ✅</>
+          <>You are now logged out</>
         )}
       </LogoutMessage>
     </LogoutContainer>

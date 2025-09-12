@@ -1,0 +1,141 @@
+:root {
+  --bg-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --card-bg: rgba(255, 255, 255, 0.06);
+  --accent: #9c88ff;
+  --muted: rgba(255, 255, 255, 0.88);
+  --border: rgba(255, 255, 255, 0.08);
+  --radius: 16px;
+  --max-width: 880px;
+}
+
+.cp-page {
+  min-height: 100vh;
+  font-family: "Poppins", sans-serif;
+  background: var(--bg-1);
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Hero */
+.cp-hero {
+  width: 100%;
+  padding: 56px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: inset 0 -40px 80px rgba(0, 0, 0, 0.25);
+}
+
+.cp-hero-inner {
+  max-width: var(--max-width);
+  width: 100%;
+  text-align: left;
+  color: #fff;
+  position: relative;
+}
+
+.cp-back {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: all 0.2s ease;
+}
+
+.cp-back:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cp-title {
+  font-size: 42px;
+  margin: 12px 0 8px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.cp-sub {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Container */
+.cp-container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: -36px 20px 60px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+/* Cards */
+.cp-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+  color: #fff;
+}
+
+.cp-card h2 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: var(--accent);
+}
+
+.cp-card p {
+  line-height: 1.6;
+}
+
+/* Links */
+.cp-card a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cp-card a:hover {
+  text-decoration: underline;
+}
+
+/* Footer */
+.cp-footer {
+  margin-top: 20px;
+  padding: 28px 0 40px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Responsive */
+@media (min-width: 720px) {
+  .cp-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .cp-card:last-child {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 480px) {
+  .cp-title {
+    font-size: 28px;
+  }
+  .cp-hero {
+    padding: 40px 16px;
+  }
+  .cp-container {
+    margin: -24px 12px 40px;
+    gap: 14px;
+  }
+}

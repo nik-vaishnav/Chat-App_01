@@ -1,108 +1,139 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { apiService } from '../services/apiServices';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
+// --- styled-components (same as your version) ---
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #6a1b9a, #8e24aa);
+  background: linear-gradient(135deg, #4a148c, #8e24aa);
   color: #fff;
-  font-family: 'Arial', sans-serif;
+  font-family: 'Poppins', sans-serif;
   padding: 20px;
 `;
 
-const FormWrapper = styled.div`
+const FormWrapper = styled(motion.div)`
   background: #fff;
-  border-radius: 12px;
-  padding: 30px 40px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   color: #333;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
 `;
 
 const Title = styled.h1`
   margin-bottom: 20px;
-color: var(--accent-color);
+  color: #6a1b9a;
   text-align: center;
-  font-size: 24px;
+  font-size: 28px;
+  font-weight: bold;
+`;
+
+const InputGroup = styled.div`
+  position: relative;
+  margin: 12px 0;
 `;
 
 const Input = styled.input`
   width: 100%;
-  padding: 12px 16px;
-  margin: 10px 0;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 16px;
-  box-sizing: border-box;
-  transition: border-color 0.3s ease;
-  
+  padding: 14px 16px;
+  border: 1px solid ${({ hasError }) => (hasError ? '#e53e3e' : '#ccc')};
+  border-radius: 10px;
+  font-size: 15px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+
   &:focus {
     outline: none;
-    border-color: var(--accent-color);
-
-    box-shadow: 0 0 0 2px rgba(106, 27, 154, 0.1);
+    border-color: ${({ hasError }) => (hasError ? '#e53e3e' : '#6a1b9a')};
+    box-shadow: 0 0 0 3px
+      ${({ hasError }) =>
+        hasError ? 'rgba(229, 62, 62, 0.15)' : 'rgba(106, 27, 154, 0.15)'};
   }
-  
+
   &:disabled {
     background-color: #f5f5f5;
     cursor: not-allowed;
   }
 `;
 
-const Button = styled.button`
-  background: #6a1b9a;
-  color: #fff;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
+const TogglePassword = styled.span`
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
   cursor: pointer;
-  margin-top: 10px;
-  width: 100%;
-  transition: background-color 0.3s ease;
-  
-  &:hover:not(:disabled) {
-    background: #8e24aa;
+  font-size: 14px;
+  color: #6a1b9a;
+
+  &:hover {
+    color: #8e24aa;
   }
-  
+`;
+
+const Button = styled.button`
+  background: linear-gradient(135deg, #6a1b9a, #8e24aa);
+  color: #fff;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 18px;
+  width: 100%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(106, 27, 154, 0.35);
+  }
+
   &:disabled {
     background: #ccc;
     cursor: not-allowed;
   }
 `;
 
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
 const ErrorMessage = styled.p`
   color: #e53e3e;
-  font-size: 14px;
-  margin-top: 10px;
-  text-align: center;
+  font-size: 13px;
+  margin-top: 6px;
+  text-align: left;
+  animation: ${fadeIn} 0.3s ease;
 `;
 
 const SuccessMessage = styled.p`
   color: #38a169;
   font-size: 14px;
-  margin-top: 10px;
+  margin-top: 12px;
   text-align: center;
+  animation: ${fadeIn} 0.3s ease;
 `;
 
 const LinkText = styled.p`
   text-align: center;
   margin-top: 20px;
-  color: #666;
+  color: #555;
   font-size: 14px;
 `;
 
 const Link = styled.span`
-color: var(--accent-color);
+  color: #6a1b9a;
   cursor: pointer;
+  font-weight: 500;
   text-decoration: underline;
-  
+
   &:hover {
     color: #8e24aa;
   }
@@ -112,150 +143,145 @@ const LoadingSpinner = styled.div`
   display: inline-block;
   width: 16px;
   height: 16px;
-  border: 2px solid #ffffff;
+  border: 2px solid #fff;
   border-radius: 50%;
   border-top-color: transparent;
-  animation: spin 1s ease-in-out infinite;
+  animation: spin 0.9s linear infinite;
   margin-right: 8px;
-  
+
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 `;
 
 const SignUpPage = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-  });
-  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [formErrors, setFormErrors] = useState({});
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    // Clear messages when user starts typing
-    if (error) setError('');
-    if (success) setSuccess('');
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'name':
+        if (!value.trim()) return 'Name is required';
+        break;
+      case 'email':
+        if (!value.trim()) return 'Email is required';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+          return 'Enter a valid email';
+        break;
+      case 'password':
+        if (!value.trim()) return 'Password is required';
+        if (value.length < 6) return 'At least 6 characters required';
+        break;
+      default:
+        return '';
+    }
+    return '';
   };
 
-  const validateForm = () => {
-    if (!formData.name.trim()) {
-      setError('Name is required');
-      return false;
-    }
-    if (!formData.email.trim()) {
-      setError('Email is required');
-      return false;
-    }
-    if (!formData.password.trim()) {
-      setError('Password is required');
-      return false;
-    }
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return false;
-    }
-    
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
-      return false;
-    }
-
-    return true;
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    setFormErrors({ ...formErrors, [name]: validateField(name, value) });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+    const errors = {};
+    Object.keys(formData).forEach((key) => {
+      const error = validateField(key, formData[key]);
+      if (error) errors[key] = error;
+    });
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
 
     setLoading(true);
-    setError('');
     setSuccess('');
 
     try {
       const response = await apiService.signUp(formData);
-      setSuccess(response.message || 'Sign-up successful! You can now log in.');
-      setError('');
-      
-      // Reset form after successful signup
-      setFormData({
-        name: '',
-        email: '',
-        password: '',
-      });
-      
-      // Redirect to login page after 2 seconds
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-      
+      setSuccess(response.message || 'Sign-up successful! Redirecting...');
+      setFormData({ name: '', email: '', password: '' });
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
-      setError(err.message || 'An error occurred during sign-up. Please try again.');
-      setSuccess('');
+      setFormErrors({ general: err.message || 'Sign-up failed.' });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLoginRedirect = () => {
-    navigate('/login');
-  };
-
   return (
     <Container>
-      <FormWrapper>
-        <Title>Sign Up</Title>
+      <FormWrapper
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <Title>Create Account</Title>
         <form onSubmit={handleSubmit}>
-          <Input
-            type="text"
-            name="name"
-            placeholder="Full Name"
-            value={formData.name}
-            onChange={handleChange}
-            disabled={loading}
-            required
-          />
-          <Input
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            value={formData.email}
-            onChange={handleChange}
-            disabled={loading}
-            required
-          />
-          <Input
-            type="password"
-            name="password"
-            placeholder="Password (min 6 characters)"
-            value={formData.password}
-            onChange={handleChange}
-            disabled={loading}
-            required
-            minLength="6"
-          />
+          <InputGroup>
+            <Input
+              type="text"
+              name="name"
+              placeholder="Full Name"
+              value={formData.name}
+              onChange={handleChange}
+              disabled={loading}
+              hasError={!!formErrors.name}
+            />
+            {formErrors.name && <ErrorMessage>{formErrors.name}</ErrorMessage>}
+          </InputGroup>
+
+          <InputGroup>
+            <Input
+              type="email"
+              name="email"
+              placeholder="Email Address"
+              value={formData.email}
+              onChange={handleChange}
+              disabled={loading}
+              hasError={!!formErrors.email}
+            />
+            {formErrors.email && <ErrorMessage>{formErrors.email}</ErrorMessage>}
+          </InputGroup>
+
+          <InputGroup>
+            <Input
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              placeholder="Password (min 6 characters)"
+              value={formData.password}
+              onChange={handleChange}
+              disabled={loading}
+              hasError={!!formErrors.password}
+            />
+            <TogglePassword onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? '🙈' : '👁️'}
+            </TogglePassword>
+            {formErrors.password && (
+              <ErrorMessage>{formErrors.password}</ErrorMessage>
+            )}
+          </InputGroup>
+
           <Button type="submit" disabled={loading}>
             {loading && <LoadingSpinner />}
             {loading ? 'Creating Account...' : 'Sign Up'}
           </Button>
         </form>
-        
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-        {success && <SuccessMessage>{success}</SuccessMessage>}
-        
+
+        <AnimatePresence>
+          {formErrors.general && <ErrorMessage>{formErrors.general}</ErrorMessage>}
+          {success && <SuccessMessage>{success}</SuccessMessage>}
+        </AnimatePresence>
+
         <LinkText>
           Already have an account?{' '}
-          <Link onClick={handleLoginRedirect}>
-            Log in here
-          </Link>
+          <Link onClick={() => navigate('/login')}>Log in here</Link>
         </LinkText>
       </FormWrapper>
     </Container>

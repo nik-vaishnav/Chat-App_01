@@ -24,7 +24,7 @@ const ChatPage = () => {
     joinConversation,
     leaveConversation,
     socket,
-    onlineUsers, // ✅ use directly from context
+    onlineUsers, 
   } = useSocket();
 
   // Join/Leave conversation room
@@ -102,7 +102,7 @@ const ChatPage = () => {
         if (user) {
           setCurrentUser(user);
           setName(user.name);
-          connectSocket?.(); // ✅ connect socket here
+          connectSocket?.();
           await loadConversations();
           setLoading(false);
         }
@@ -169,13 +169,13 @@ const ChatPage = () => {
           currentUser={currentUser}
           onUserSelect={handleUserSelect}
           selectedUser={selectedUser}
-          onlineUsers={onlineUsers} // ✅ now from context
+          onlineUsers={onlineUsers} 
         />
         <ChatMain
           currentUser={currentUser}
           selectedUser={selectedUser}
           currentConversationId={currentConversationId}
-          setCurrentConversationId={setCurrentConversationId} // 👈 add this
+          setCurrentConversationId={setCurrentConversationId}
           onFriendRemoved={handleFriendRemoved}
         />
       </ChatContainer>

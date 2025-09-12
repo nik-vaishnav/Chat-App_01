@@ -1,4 +1,3 @@
-// HomePage.js
 import React, { useContext, useEffect, useState, useRef } from "react";
 import styled, { ThemeProvider, keyframes, createGlobalStyle, css } from "styled-components";
 import { useNavigate } from "react-router-dom";
@@ -94,7 +93,6 @@ const HomePage = () => {
           theme={currentTheme}
         />
         
-        {/* Navbar with higher z-index */}
         <NavbarContainer>
           <Navbar />
         </NavbarContainer>
@@ -239,10 +237,11 @@ const HomePage = () => {
               <BrandTagline>Connecting hearts, bridging minds</BrandTagline>
             </FooterBrand>
             <FooterLinks>
-              <FooterLink onClick={() => navigate("/about")}>About</FooterLink>
-              <FooterLink>Privacy Policy</FooterLink>
-              <FooterLink>Terms of Service</FooterLink>
-              <FooterLink>Contact Us</FooterLink>
+<FooterLink onClick={() => navigate("/about")}>About</FooterLink>
+<FooterLink onClick={() => navigate("/privacy")}>Privacy Policy</FooterLink>
+<FooterLink>Terms of Service</FooterLink>
+<FooterLink onClick={() => navigate("/contact")}>Contact Us</FooterLink>
+
             </FooterLinks>
           </FooterContent>
           <Copyright>© 2025 संवाद. All rights reserved.</Copyright>
