@@ -51,40 +51,43 @@ const LoginPage = () => {
     validateToken();
   }, [navigate, dispatch]);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+const handleLogin = async (e) => {
+  e.preventDefault();
+  if (!validateForm()) return;
 
-    setLoading(true);
-    setError('');
+  setLoading(true);
+  setError('');
 
-    try {
-      const response = await apiService.login({ email, password });
+  try {
+    const response = await apiService.login({ email, password });
 
-      const { user, token } = response || {};
-      if (!user || !token) throw new Error('Invalid login response.');
+    // ✅ unwrap properly
+    const { user, token } = response.data || {};
 
-      dispatch({ type: 'SET_USER', payload: { user, token } });
-      localStorage.setItem('token', token);
-      localStorage.setItem('name', user.name);
-      localStorage.setItem('currentUser', JSON.stringify(user));
+    if (!user || !token) throw new Error('Invalid login response from server.');
 
-      navigate('/chat', {
-        replace: true,
-        state: {
-          user: {
-            name: user.name,
-            email: user.email,
-            id: user.id,
-          },
+    dispatch({ type: 'SET_USER', payload: { user, token } });
+    localStorage.setItem('token', token);
+    localStorage.setItem('name', user.name);
+    localStorage.setItem('currentUser', JSON.stringify(user));
+
+    navigate('/chat', {
+      replace: true,
+      state: {
+        user: {
+          name: user.name,
+          email: user.email,
+          id: user.id,
         },
-      });
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
+      },
+    });
+  } catch (err) {
+    setError(err.response?.data?.message || err.message || 'Login failed');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const validateForm = () => {
     if (!email.trim()) return setError('Email is required') || false;
