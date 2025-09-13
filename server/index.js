@@ -19,8 +19,8 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
 const allowedOrigins = [
-  process.env.FRONTEND_URL,  // deployed frontend
-  'http://localhost:3000'    // local development
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+  'http://localhost:3000'
 ];
 
 console.log('JWT Secret Key:', process.env.JWT_SECRET_KEY);
@@ -37,17 +37,19 @@ const apiLimiter = rateLimit({
 // Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// CORS
+// CORS (allow preflight OPTIONS too)
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin) return callback(null, true); // server-to-server or curl
+    if (!origin) return callback(null, true); // curl/server-to-server
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error(`CORS not allowed for origin ${origin}`));
   },
   credentials: true,
-  methods: ['GET','POST','PUT','DELETE'],
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
 }));
+
+app.options('*', cors()); // handle preflight requests
 
 // Body parsing & cookies
 app.use(express.json());
@@ -63,7 +65,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', apiLimiter, authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/friends', friendRoutes);
-app.use('/api/users', authRoutes); // intentional if needed
+app.use('/api/users', authRoutes); // optional if needed
 
 // Health check
 app.get('/health', (req, res) => {
