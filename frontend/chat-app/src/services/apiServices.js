@@ -2,7 +2,7 @@ import axios from 'axios';
 import io from 'socket.io-client';
 
 // 🔧 Backend base URL fallback for safety
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://samvad-sefu.onrender.com";
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://chat-app-01-backend-olab.onrender.com";
 
 const API = axios.create({
   baseURL: `${BACKEND_URL}/api`,
