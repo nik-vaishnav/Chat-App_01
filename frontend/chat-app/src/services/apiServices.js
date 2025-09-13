@@ -2,16 +2,16 @@ import axios from 'axios';
 import io from 'socket.io-client';
 
 // 🔧 Backend base URL fallback for safety
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8080";
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://samvad-sefu.onrender.com";
 
 const API = axios.create({
   baseURL: `${BACKEND_URL}/api`,
   withCredentials: true,
 });
 
-// Socket.IO setup
+// 🔑 Declare socket + joinedConversations safely
 let socket = null;
-let joinedConversations = new Set();
+const joinedConversations = new Set();
 
 export const socketService = {
   connect: (token) => {
