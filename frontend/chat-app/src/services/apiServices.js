@@ -97,13 +97,23 @@ export const apiService = {
   },
 
 login: async ({ email, password }) => {
-  ...
-  return {
-    success: true,
-    user: { ...userData, id: userData.id || userData._id }, // normalize id
-    token,
-    message: res.data.message,
-  };
+  try {
+    const res = await API.post('/auth/login', { email, password });
+    const { user: userData, token } = res.data;
+
+    if (!userData || !token) {
+      throw new Error('Invalid login response from server');
+    }
+
+    return {
+      success: true,
+      user: { ...userData, id: userData.id || userData._id }, // normalize id
+      token,
+      message: res.data.message || 'Login successful',
+    };
+  } catch (err) {
+    throw new Error(err.response?.data?.message || 'Login failed');
+  }
 },
 
 validateToken: async () => {
