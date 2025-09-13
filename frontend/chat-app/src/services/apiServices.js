@@ -1,8 +1,11 @@
 import axios from 'axios';
 import io from 'socket.io-client';
 
+// 🔧 Backend base URL fallback for safety
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8080";
+
 const API = axios.create({
-  baseURL: `${process.env.REACT_APP_BACKEND_URL}/api`,
+  baseURL: `${BACKEND_URL}/api`,
   withCredentials: true,
 });
 
@@ -13,9 +16,9 @@ let joinedConversations = new Set();
 export const socketService = {
   connect: (token) => {
     if (!socket) {
-      socket = io(process.env.REACT_APP_BACKEND_URL, {
+      socket = io(BACKEND_URL, {
         auth: { token },
-        withCredentials: true
+        withCredentials: true,
       });
 
       socket.on('connect', () => {
@@ -55,7 +58,7 @@ export const socketService = {
 
   on: (event, callback) => socket?.on(event, callback),
   off: (event, callback) => socket?.off(event, callback),
-  getSocket: () => socket
+  getSocket: () => socket,
 };
 
 // Add request interceptor to include token in headers
@@ -95,32 +98,32 @@ export const apiService = {
     }
   },
 
-login: async ({ email, password }) => {
-  try {
-    const res = await API.post('/auth/login', { email, password });
-    console.log('Full API response:', JSON.stringify(res.data, null, 2)); // Detailed logging
-    let userData, token;
-    if (res.data.data) {
-      userData = res.data.data.user;
-      token = res.data.data.token;
-    } else {
-      userData = res.data.user;
-      token = res.data.token;
+  login: async ({ email, password }) => {
+    try {
+      const res = await API.post('/auth/login', { email, password });
+      console.log('Full API response:', JSON.stringify(res.data, null, 2)); // Debug logging
+      let userData, token;
+      if (res.data.data) {
+        userData = res.data.data.user;
+        token = res.data.data.token;
+      } else {
+        userData = res.data.user;
+        token = res.data.token;
+      }
+      if (!userData || !token) {
+        console.error('Invalid response structure:', res.data);
+        throw new Error('Invalid login response: missing user or token');
+      }
+      localStorage.setItem('token', token);
+      localStorage.setItem('name', userData.name || '');
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+      socketService.connect(token);
+      return { success: true, user: userData, token, message: res.data.message };
+    } catch (err) {
+      console.error('Login API error:', err.response?.data || err.message);
+      throw err;
     }
-    if (!userData || !token) {
-      console.error('Invalid response structure:', res.data);
-      throw new Error('Invalid login response: missing user or token');
-    }
-    localStorage.setItem('token', token);
-    localStorage.setItem('name', userData.name || '');
-    localStorage.setItem('currentUser', JSON.stringify(userData));
-    socketService.connect(token);
-    return { success: true, user: userData, token, message: res.data.message };
-  } catch (err) {
-    console.error('Login API error:', err.response?.data || err.message);
-    throw err; // Let handleLogin handle it
-  }
-},
+  },
 
   logout: async () => {
     try {
@@ -193,21 +196,16 @@ login: async ({ email, password }) => {
       throw new Error(err.response?.data?.message || 'Failed to fetch online users');
     }
   },
-    // ===== USER PREFERENCES =====
+
+  // ===== USER PREFERENCES =====
   updatePreferences: async ({ language, theme }) => {
     try {
       const res = await API.put('/auth/update-preferences', { language, theme });
-      
-      // Merge updated preferences into localStorage user
       const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
       const updatedUser = {
         ...currentUser,
-        preferences: res.data.preferences || {
-          language: 'english',
-          theme: 'light'
-        }
+        preferences: res.data.preferences || { language: 'english', theme: 'light' },
       };
-      
       localStorage.setItem('currentUser', JSON.stringify(updatedUser));
       return res.data;
     } catch (err) {
@@ -236,12 +234,10 @@ login: async ({ email, password }) => {
 
   sendFriendRequest: async (recipientId) => {
     console.log('🌐 API: sendFriendRequest called with:', { recipientId });
-    
     try {
       if (!recipientId || typeof recipientId !== 'string' || recipientId.trim() === '') {
         throw new Error('Valid recipient ID is required');
       }
-
       const res = await API.post('/friends/requests', { recipientId });
       console.log('✅ API: Friend request sent successfully:', res.data);
       return res.data;
@@ -278,7 +274,7 @@ login: async ({ email, password }) => {
     }
   },
 
-  // ===== CONVERSATIONS ===== 
+  // ===== CONVERSATIONS =====
   getConversations: async () => {
     try {
       const res = await API.get('/messages/conversations');
@@ -288,23 +284,24 @@ login: async ({ email, password }) => {
     }
   },
 
-// ===== CONVERSATIONS =====
-createConversation: async (participantId) => {
-  try {
-    const res = await API.post('/messages/conversations', { participantId });
-    return res.data;
-  } catch (err) {
-    throw new Error(err.response?.data?.message || 'Failed to create conversation');
-  }
-},
-
-createOrFetchConversation: async (participantId) => {
-  return apiService.createConversation(participantId);
-},
-  
-  getMessages: async (conversationId, page = 1, limit = 50) => {  // ✅ FIXED: Updated route
+  createConversation: async (participantId) => {
     try {
-      const res = await API.get(`/messages/conversations/${conversationId}/messages?page=${page}&limit=${limit}`);
+      const res = await API.post('/messages/conversations', { participantId });
+      return res.data;
+    } catch (err) {
+      throw new Error(err.response?.data?.message || 'Failed to create conversation');
+    }
+  },
+
+  createOrFetchConversation: async (participantId) => {
+    return apiService.createConversation(participantId);
+  },
+
+  getMessages: async (conversationId, page = 1, limit = 50) => {
+    try {
+      const res = await API.get(
+        `/messages/conversations/${conversationId}/messages?page=${page}&limit=${limit}`
+      );
       return res.data;
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Failed to fetch messages');
@@ -320,7 +317,7 @@ createOrFetchConversation: async (participantId) => {
     }
   },
 
-  markConversationAsRead: async (conversationId) => {  // ✅ FIXED: Correct route
+  markConversationAsRead: async (conversationId) => {
     try {
       const res = await API.put(`/messages/conversations/${conversationId}/read`);
       return res.data;
@@ -338,7 +335,7 @@ createOrFetchConversation: async (participantId) => {
     }
   },
 
-  searchMessages: async (query, conversationId = null) => {  // ✅ FIXED: Changed q to query
+  searchMessages: async (query, conversationId = null) => {
     try {
       const params = new URLSearchParams({ query });
       if (conversationId) params.append('conversationId', conversationId);
@@ -349,7 +346,7 @@ createOrFetchConversation: async (participantId) => {
     }
   },
 
-  editMessage: async (messageId, content) => {  // ✅ FIXED: Removed /edit
+  editMessage: async (messageId, content) => {
     try {
       const res = await API.put(`/messages/messages/${messageId}`, { content });
       return res.data;
@@ -358,7 +355,7 @@ createOrFetchConversation: async (participantId) => {
     }
   },
 
-  deleteMessage: async (messageId) => {  // ✅ FIXED: Added /messages prefix
+  deleteMessage: async (messageId) => {
     try {
       const res = await API.delete(`/messages/messages/${messageId}`);
       return res.data;
@@ -370,13 +367,12 @@ createOrFetchConversation: async (participantId) => {
   // ===== HEALTH =====
   healthCheck: async () => {
     try {
-      const baseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8080';
-      const res = await axios.get(`${baseUrl}/health`);
+      const res = await axios.get(`${BACKEND_URL}/health`);
       return res.data;
     } catch (err) {
       throw new Error(err.response?.data?.message || 'Health check failed');
     }
-  }
+  },
 };
 
 export default apiService;
