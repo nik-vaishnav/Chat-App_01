@@ -10,6 +10,7 @@ const { connectDatabase } = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const friendRoutes = require('./routes/friendRoutes');
+const userRoutes = require('./routes/userRoutes');   // ✅ added correct users router
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { initializeSocket } = require('./config/socketInit');
 
@@ -65,7 +66,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', apiLimiter, authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/friends', friendRoutes);
-app.use('/api/users', authRoutes);
+app.use('/api/users', userRoutes);   // ✅ fixed (was incorrectly authRoutes)
 
 // Health check
 app.get('/health', (req, res) => {
