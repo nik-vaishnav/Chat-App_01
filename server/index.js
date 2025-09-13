@@ -10,7 +10,7 @@ const { connectDatabase } = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const friendRoutes = require('./routes/friendRoutes');
-const userRoutes = require('./routes/userRoutes'); 
+const userRoutes = require('./routes/userRoutes'); // ✅ added
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { initializeSocket } = require('./config/socketInit');
 
@@ -40,7 +40,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // CORS
 app.use(cors({
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error(`CORS not allowed for origin ${origin}`));
@@ -66,7 +66,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', apiLimiter, authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/friends', friendRoutes);
-app.use('/api/users', userRoutes);   // ✅ fixed (was incorrectly authRoutes)
+app.use('/api/users', userRoutes); // ✅ fixed
 
 // Health check
 app.get('/health', (req, res) => {
