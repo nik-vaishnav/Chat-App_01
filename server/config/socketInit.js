@@ -1,15 +1,23 @@
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
-const socketService = require('../services/socketService'); // updated path
+const socketService = require('../services/socketService');
 const UserModel = require('../models/UserModel');
 
-const initializeSocket = (server, frontendURL) => {
+const initializeSocket = (server, allowedOrigins) => {
   const io = socketIo(server, {
     cors: {
-      origin: frontendURL,
+      origin: function (origin, callback) {
+        // allow requests with no origin (e.g., curl, server-to-server)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        } else {
+          return callback(new Error('CORS not allowed'));
+        }
+      },
       methods: ['GET', 'POST'],
       credentials: true,
-    }
+    },
   });
 
   // Authentication middleware
