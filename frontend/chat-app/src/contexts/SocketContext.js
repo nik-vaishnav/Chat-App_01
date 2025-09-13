@@ -13,15 +13,17 @@ import { useNotification } from './NotificationContext';
 import { useLocation } from 'react-router-dom';
 import { setupSocketListeners } from './socketListeners';
 
-const SERVER_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:8080';
+// Must set this in Render env: REACT_APP_SOCKET_URL=https://samvad-sefu.onrender.com
+const SERVER_URL = process.env.REACT_APP_SOCKET_URL;
+if (!SERVER_URL) {
+  throw new Error('REACT_APP_SOCKET_URL not set in environment variables');
+}
 
 const SocketContext = createContext();
 
 export const useSocket = () => {
   const context = useContext(SocketContext);
-  if (!context) {
-    throw new Error('useSocket must be used within a SocketProvider');
-  }
+  if (!context) throw new Error('useSocket must be used within a SocketProvider');
   return context;
 };
 
@@ -39,19 +41,13 @@ export const SocketProvider = ({ children }) => {
   const { notify } = useNotification();
   const location = useLocation();
 
-  // 🧠 Connect to socket server
+  // Connect to socket server
   const connectSocket = useCallback(() => {
-    if (!isAuthenticated || isLoading || !currentUser || !token) {
-      console.warn('❌ Cannot connect: missing user info or token');
-      return;
-    }
+    if (!isAuthenticated || isLoading || !currentUser || !token) return;
 
-    if (socket?.connected) {
-      console.log('✅ Socket already connected');
-      return;
-    }
+    if (socket?.connected) return;
 
-    console.log('🔌 Connecting to socket...');
+    console.log('🔌 Connecting to socket server...');
 
     const newSocket = io(SERVER_URL, {
       auth: {
@@ -59,12 +55,12 @@ export const SocketProvider = ({ children }) => {
         userId: currentUser._id || currentUser.id,
       },
       transports: ['websocket', 'polling'],
+      withCredentials: true,
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
       reconnectionDelay: 1000,
     });
 
-    // 📡 Setup all socket event listeners
     setupSocketListeners({
       socket: newSocket,
       notify,
@@ -88,17 +84,17 @@ export const SocketProvider = ({ children }) => {
     notify,
     location,
     currentConversation,
-    socket,
+    socket
   ]);
 
-  // ⚡ Auto-connect once user is authenticated
+  // Auto-connect when authenticated
   useEffect(() => {
     if (isAuthenticated && !isLoading && currentUser && token && !socket) {
       connectSocket();
     }
   }, [isAuthenticated, isLoading, currentUser, token, socket, connectSocket]);
 
-  // 🧹 Cleanup on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (socket) {
@@ -109,7 +105,7 @@ export const SocketProvider = ({ children }) => {
     };
   }, [socket]);
 
-  // 🟢 Reset unread count when viewing conversation
+  // Reset unread count when viewing a conversation
   useEffect(() => {
     if (currentConversation) {
       setUnreadCounts((prev) => ({
@@ -119,62 +115,40 @@ export const SocketProvider = ({ children }) => {
     }
   }, [currentConversation]);
 
-  // ✉️ Emit message
+  // Socket actions
   const sendMessage = useCallback((messageData) => {
-    if (socket && isConnected) {
-      socket.emit('sendMessage', messageData);
-    }
+    if (socket && isConnected) socket.emit('sendMessage', messageData);
   }, [socket, isConnected]);
 
-  // Join/Leave Conversation
   const joinConversation = useCallback((conversationId) => {
-    if (socket && isConnected) {
-      socket.emit('joinConversation', conversationId);
-    }
+    if (socket && isConnected) socket.emit('joinConversation', conversationId);
   }, [socket, isConnected]);
 
   const leaveConversation = useCallback((conversationId) => {
-    if (socket && isConnected) {
-      socket.emit('leaveConversation', conversationId);
-    }
+    if (socket && isConnected) socket.emit('leaveConversation', conversationId);
   }, [socket, isConnected]);
 
-  // Mark message as seen
   const markMessageAsSeen = useCallback((messageId) => {
-    if (socket && isConnected) {
-      socket.emit('markMessageSeen', messageId);
-    }
+    if (socket && isConnected) socket.emit('markMessageSeen', messageId);
   }, [socket, isConnected]);
 
-  // Typing indicator
   const emitTyping = useCallback((conversationId, isTyping) => {
-    if (socket && isConnected) {
-      socket.emit('typing', { conversationId, isTyping });
-    }
+    if (socket && isConnected) socket.emit('typing', { conversationId, isTyping });
   }, [socket, isConnected]);
 
-  // Update online status (busy, away, etc.)
   const updateUserStatus = useCallback((status) => {
-    if (socket && isConnected) {
-      socket.emit('updateStatus', status);
-    }
+    if (socket && isConnected) socket.emit('updateStatus', status);
   }, [socket, isConnected]);
 
-  // New conversation
   const createConversation = useCallback((participantIds) => {
-    if (socket && isConnected) {
-      socket.emit('createConversation', participantIds);
-    }
+    if (socket && isConnected) socket.emit('createConversation', participantIds);
   }, [socket, isConnected]);
 
-  // Manual refresh online users
   const requestOnlineUsers = useCallback(() => {
-    if (socket && isConnected) {
-      socket.emit('getOnlineUsers');
-    }
+    if (socket && isConnected) socket.emit('getOnlineUsers');
   }, [socket, isConnected]);
 
-  // 💡 Memoize all context values to avoid re-renders
+  // Memoized context value
   const contextValue = useMemo(() => ({
     socket,
     isConnected,
