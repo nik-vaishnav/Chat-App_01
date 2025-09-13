@@ -16,7 +16,6 @@ const initializeSocket = (server, allowedOrigins) => {
     },
   });
 
-  // Socket auth middleware
   io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error('Authentication error: No token provided'));
@@ -35,7 +34,6 @@ const initializeSocket = (server, allowedOrigins) => {
     }
   });
 
-  // Initialize socket service
   socketService.initialize(io);
 
   return io;
