@@ -96,32 +96,27 @@ export const apiService = {
     }
   },
 
-  login: async ({ email, password }) => {
-    try {
-      const res = await API.post('/auth/login', { email, password });
-      console.log('Full API response:', JSON.stringify(res.data, null, 2)); // Debug logging
-      let userData, token;
-      if (res.data.data) {
-        userData = res.data.data.user;
-        token = res.data.data.token;
-      } else {
-        userData = res.data.user;
-        token = res.data.token;
-      }
-      if (!userData || !token) {
-        console.error('Invalid response structure:', res.data);
-        throw new Error('Invalid login response: missing user or token');
-      }
-      localStorage.setItem('token', token);
-      localStorage.setItem('name', userData.name || '');
-      localStorage.setItem('currentUser', JSON.stringify(userData));
-      socketService.connect(token);
-      return { success: true, user: userData, token, message: res.data.message };
-    } catch (err) {
-      console.error('Login API error:', err.response?.data || err.message);
-      throw err;
+login: async ({ email, password }) => {
+  ...
+  return {
+    success: true,
+    user: { ...userData, id: userData.id || userData._id }, // normalize id
+    token,
+    message: res.data.message,
+  };
+},
+
+validateToken: async () => {
+  try {
+    const res = await API.get('/auth/validate-token');
+    if (res.data.user) {
+      res.data.user.id = res.data.user.id || res.data.user._id; // normalize
     }
-  },
+    return res.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.message || 'Token validation failed');
+  }
+},
 
   logout: async () => {
     try {
@@ -134,14 +129,6 @@ export const apiService = {
     }
   },
 
-  validateToken: async () => {
-    try {
-      const res = await API.get('/auth/validate-token');
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Token validation failed');
-    }
-  },
 
   // ===== USER MANAGEMENT =====
   fetchUserProfile: async () => {
