@@ -33,11 +33,25 @@ const apiLimiter = rateLimit({
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://chat-app-frontend-9eb7.onrender.com'
+];
+
 app.use(cors({
-  origin: frontendURL,
+  origin: function(origin, callback) {
+    // allow requests with no origin (like curl or server-to-server)
+    if(!origin) return callback(null, true);
+    if(allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('CORS not allowed'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET','POST','PUT','DELETE']
 }));
+
 app.use(express.json());
 app.use(cookieParser());
 
