@@ -59,10 +59,12 @@ const handleLogin = async (e) => {
   setError('');
 
   try {
-    const response = await apiService.login({ email, password });
+const response = await apiService.login({ email, password });
+    
+console.log("Login response:", response);
 
-    // ✅ unwrap properly
-    const { user, token } = response.data || {};
+    const { user, token } = response || {};
+
 
     if (!user || !token) throw new Error('Invalid login response from server.');
 
