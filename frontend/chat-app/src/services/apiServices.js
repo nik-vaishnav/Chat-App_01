@@ -95,40 +95,32 @@ export const apiService = {
     }
   },
 
-  login: async ({ email, password }) => {
-    try {
-      const res = await API.post('/auth/login', { email, password });
-      console.log('Full API response:', res.data);
-
-      let userData, token;
-      if (res.data.data) {
-        userData = res.data.data.user;
-        token = res.data.data.token;
-      } else {
-        userData = res.data.user;
-        token = res.data.token;
-      }
-
-      if (token && userData) {
-        localStorage.setItem('token', token);
-        localStorage.setItem('name', userData.name || '');
-        localStorage.setItem('currentUser', JSON.stringify(userData));
-        
-        // Connect socket - imp  after successful login
-        socketService.connect(token);
-      }
-
-      return {
-        success: true,
-        user: userData,
-        token: token,
-        message: res.data.message
-      };
-    } catch (err) {
-      console.error('Login API error:', err);
-      throw err;
+login: async ({ email, password }) => {
+  try {
+    const res = await API.post('/auth/login', { email, password });
+    console.log('Full API response:', JSON.stringify(res.data, null, 2)); // Detailed logging
+    let userData, token;
+    if (res.data.data) {
+      userData = res.data.data.user;
+      token = res.data.data.token;
+    } else {
+      userData = res.data.user;
+      token = res.data.token;
     }
-  },
+    if (!userData || !token) {
+      console.error('Invalid response structure:', res.data);
+      throw new Error('Invalid login response: missing user or token');
+    }
+    localStorage.setItem('token', token);
+    localStorage.setItem('name', userData.name || '');
+    localStorage.setItem('currentUser', JSON.stringify(userData));
+    socketService.connect(token);
+    return { success: true, user: userData, token, message: res.data.message };
+  } catch (err) {
+    console.error('Login API error:', err.response?.data || err.message);
+    throw err; // Let handleLogin handle it
+  }
+},
 
   logout: async () => {
     try {
