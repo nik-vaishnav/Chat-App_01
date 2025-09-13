@@ -14,7 +14,7 @@ const joinedConversations = new Set();
 export const socketService = {
   connect: (token) => {
     if (!socket) {
-      socket = io(BACKEND_URL, {
+      socket = io(SOCKET_URL, {
         auth: { token },
         withCredentials: true,
       });
