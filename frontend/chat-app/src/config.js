@@ -1,0 +1,4 @@
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://chat-app-01-backend-olab.onrender.com";
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || "https://chat-app-01-backend-olab.onrender.com";
+
+export { BACKEND_URL, SOCKET_URL };
