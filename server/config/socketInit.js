@@ -6,38 +6,23 @@ const UserModel = require('../models/UserModel');
 const initializeSocket = (server, allowedOrigins) => {
   const io = socketIo(server, {
     cors: {
-      origin: function (origin, callback) {
-        // allow requests with no origin (e.g., curl, server-to-server)
+      origin: function(origin, callback) {
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) {
-          return callback(null, true);
-        } else {
-          return callback(new Error('CORS not allowed'));
-        }
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error('CORS not allowed'));
       },
-      methods: ['GET', 'POST'],
+      methods: ['GET', 'POST', 'OPTIONS'],
       credentials: true,
     },
   });
 
-  // Authentication middleware
+  // Socket auth middleware
   io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token;
-    console.log('🔐 Socket auth: Token received:', token);
-
-    if (!token) {
-      console.log('❌ No token provided');
-      return next(new Error('Authentication error: No token provided'));
-    }
+    if (!token) return next(new Error('Authentication error: No token provided'));
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-      console.log('✅ Token decoded:', decoded);
-
-      if (!decoded?.id || !decoded?.email) {
-        throw new Error('Invalid token payload');
-      }
-
       socket.userId = decoded.id;
       socket.userEmail = decoded.email;
 
@@ -46,12 +31,11 @@ const initializeSocket = (server, allowedOrigins) => {
 
       next();
     } catch (err) {
-      console.log('❌ Token verification failed:', err.message);
       return next(new Error('Authentication error: Invalid token'));
     }
   });
 
-  // Pass control to socketService (handles connection/disconnection)
+  // Initialize socket service
   socketService.initialize(io);
 
   return io;
