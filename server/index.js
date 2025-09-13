@@ -19,39 +19,34 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
 const allowedOrigins = [
-  'http://localhost:3000',
-  'https://chat-app-frontend-9eb7.onrender.com'
+  process.env.FRONTEND_URL,  // deployed frontend
+  'http://localhost:3000'    // local development
 ];
 
 console.log('JWT Secret Key:', process.env.JWT_SECRET_KEY);
 
-// Connect DB
+// Connect to database
 connectDatabase();
 
 // Rate limiter
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 100, // max requests per window
+  max: 100,            // max requests per window
 });
 
 // Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// CORS setup
+// CORS
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (curl, server-to-server)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error(`CORS not allowed for origin ${origin}`));
-    }
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true); // server-to-server or curl
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS not allowed for origin ${origin}`));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET','POST','PUT','DELETE'],
+  allowedHeaders: ['Content-Type','Authorization'],
 }));
 
 // Body parsing & cookies
@@ -68,7 +63,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', apiLimiter, authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/friends', friendRoutes);
-app.use('/api/users', authRoutes); // If this is intentional
+app.use('/api/users', authRoutes); // intentional if needed
 
 // Health check
 app.get('/health', (req, res) => {
@@ -83,7 +78,7 @@ app.get('/health', (req, res) => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Initialize Socket.IO with authentication & handlers
+// Socket.IO
 const io = initializeSocket(server, allowedOrigins);
 
 // Start server
