@@ -19,7 +19,7 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:3000',
+  process.env.FRONTEND_URL,
   'http://localhost:3000'
 ];
 
@@ -30,17 +30,17 @@ connectDatabase();
 
 // Rate limiter
 const apiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100,            // max requests per window
+  windowMs: 60 * 1000,
+  max: 100,
 });
 
 // Serve static uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// CORS (allow preflight OPTIONS too)
+// CORS
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin) return callback(null, true); // curl/server-to-server
+    if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error(`CORS not allowed for origin ${origin}`));
   },
@@ -49,13 +49,13 @@ app.use(cors({
   allowedHeaders: ['Content-Type','Authorization'],
 }));
 
-app.options('*', cors()); // handle preflight requests
+app.options('*', cors());
 
 // Body parsing & cookies
 app.use(express.json());
 app.use(cookieParser());
 
-// Logging middleware
+// Logging
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
   next();
@@ -65,7 +65,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', apiLimiter, authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/friends', friendRoutes);
-app.use('/api/users', authRoutes); // optional if needed
+app.use('/api/users', authRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
