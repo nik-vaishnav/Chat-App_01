@@ -20,24 +20,24 @@ const LoginPage = () => {
 
       try {
         const response = await apiService.validateToken();
+        console.log("Validate token response:", response);
 
         if (response.success && response.user) {
-          localStorage.setItem('name', response.user.name);
-          localStorage.setItem('currentUser', JSON.stringify(response.user));
+          const normalizedUser = {
+            ...response.user,
+            id: response.user.id || response.user._id, // normalize ID
+          };
+
+          localStorage.setItem('name', normalizedUser.name);
+          localStorage.setItem('currentUser', JSON.stringify(normalizedUser));
 
           dispatch({
             type: 'SET_USER',
-            payload: { user: response.user, token }
+            payload: { user: normalizedUser, token }
           });
 
           navigate('/chat', {
-            state: {
-              user: {
-                name: response.user.name,
-                email: response.user.email,
-                id: response.user.id,
-              },
-            },
+            state: { user: normalizedUser },
           });
         }
       } catch (err) {
@@ -51,45 +51,40 @@ const LoginPage = () => {
     validateToken();
   }, [navigate, dispatch]);
 
-const handleLogin = async (e) => {
-  e.preventDefault();
-  if (!validateForm()) return;
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
-  setLoading(true);
-  setError('');
+    setLoading(true);
+    setError('');
 
-  try {
-const response = await apiService.login({ email, password });
-    
-console.log("Login response:", response);
+    try {
+      const response = await apiService.login({ email, password });
+      console.log("Login response:", response);
 
-    const { user, token } = response || {};
+      const { user, token } = response || {};
+      if (!user || !token) throw new Error('Invalid login response from server.');
 
+      const normalizedUser = {
+        ...user,
+        id: user.id || user._id, // normalize ID
+      };
 
-    if (!user || !token) throw new Error('Invalid login response from server.');
+      dispatch({ type: 'SET_USER', payload: { user: normalizedUser, token } });
+      localStorage.setItem('token', token);
+      localStorage.setItem('name', normalizedUser.name);
+      localStorage.setItem('currentUser', JSON.stringify(normalizedUser));
 
-    dispatch({ type: 'SET_USER', payload: { user, token } });
-    localStorage.setItem('token', token);
-    localStorage.setItem('name', user.name);
-    localStorage.setItem('currentUser', JSON.stringify(user));
-
-    navigate('/chat', {
-      replace: true,
-      state: {
-        user: {
-          name: user.name,
-          email: user.email,
-          id: user.id,
-        },
-      },
-    });
-  } catch (err) {
-    setError(err.response?.data?.message || err.message || 'Login failed');
-  } finally {
-    setLoading(false);
-  }
-};
-
+      navigate('/chat', {
+        replace: true,
+        state: { user: normalizedUser },
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const validateForm = () => {
     if (!email.trim()) return setError('Email is required') || false;
