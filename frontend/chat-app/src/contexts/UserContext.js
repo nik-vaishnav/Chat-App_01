@@ -95,7 +95,11 @@ const userReducer = (state, action) => {
   }
 };
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+// ✅ Use REACT_APP_BACKEND_URL not REACT_APP_API_URL
+const API_BASE_URL =
+  process.env.REACT_APP_BACKEND_URL
+    ? `${process.env.REACT_APP_BACKEND_URL}/api`
+    : 'http://localhost:8080/api';
 
 export const UserProvider = ({ children }) => {
   const [state, dispatch] = useReducer(userReducer, initialState);
@@ -286,30 +290,30 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     if (initializationComplete.current) return;
 
-const init = async () => {
-  const token = localStorage.getItem('token');
-  const storedUser = localStorage.getItem('currentUser');
+    const init = async () => {
+      const token = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('currentUser');
 
-  if (token && storedUser) {
-    let user;
-    try {
-      user = JSON.parse(storedUser);
-    } catch (e) {
-      console.warn('⚠️ Corrupted stored user JSON, clearing storage.');
-      localStorage.clear();
-      dispatch({ type: USER_ACTIONS.LOGOUT });
+      if (token && storedUser) {
+        let user;
+        try {
+          user = JSON.parse(storedUser);
+        } catch (e) {
+          console.warn('⚠️ Corrupted stored user JSON, clearing storage.');
+          localStorage.clear();
+          dispatch({ type: USER_ACTIONS.LOGOUT });
+          initializationComplete.current = true;
+          return;
+        }
+
+        dispatch({ type: USER_ACTIONS.SET_USER, payload: { token, user } });
+        await validateToken();
+      } else {
+        dispatch({ type: USER_ACTIONS.SET_AUTHENTICATED, payload: false });
+      }
+
       initializationComplete.current = true;
-      return;
-    }
-
-    dispatch({ type: USER_ACTIONS.SET_USER, payload: { token, user } });
-    await validateToken();
-  } else {
-    dispatch({ type: USER_ACTIONS.SET_AUTHENTICATED, payload: false });
-  }
-
-  initializationComplete.current = true;
-};
+    };
 
     init();
   }, [validateToken]);
