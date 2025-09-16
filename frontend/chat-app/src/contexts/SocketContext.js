@@ -13,7 +13,6 @@ import { useNotification } from './NotificationContext';
 import { useLocation } from 'react-router-dom';
 import { setupSocketListeners } from './socketListeners';
 
-// Must set this in Render env: REACT_APP_SOCKET_URL=https://samvad-sefu.onrender.com
 const SERVER_URL = process.env.REACT_APP_SOCKET_URL;
 if (!SERVER_URL) {
   throw new Error('REACT_APP_SOCKET_URL not set in environment variables');
