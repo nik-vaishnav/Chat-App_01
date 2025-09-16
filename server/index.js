@@ -10,7 +10,7 @@ const { connectDatabase } = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const friendRoutes = require('./routes/friendRoutes');
-const userRoutes = require('./routes/userRoutes'); // ✅ added
+const userRoutes = require('./routes/userRoutes'); 
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { initializeSocket } = require('./config/socketInit');
 
