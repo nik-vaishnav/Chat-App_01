@@ -13,7 +13,7 @@ const generateToken = (user) => {
   );
 };
 
-// Register
+// Register (explicitly hash password)
 const register = async (req, res) => {
   try {
     const { name = '', email = '', password = '' } = req.body;
@@ -22,15 +22,19 @@ const register = async (req, res) => {
       return sendErrorResponse(res, 400, "All fields are required");
     }
 
-    const existingUser = await UserModel.findOne({ email: email.toLowerCase().trim() });
+    const normalizedEmail = email.toLowerCase().trim();
+    const existingUser = await UserModel.findOne({ email: normalizedEmail });
     if (existingUser) {
       return sendErrorResponse(res, 400, "User already exists");
     }
 
+    // Explicitly hash password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const newUser = new UserModel({
       name: name.trim(),
-      email: email.toLowerCase().trim(),
-      password // Let mongoose pre-save hook hash it
+      email: normalizedEmail,
+      password: hashedPassword
     });
 
     await newUser.save();
@@ -94,6 +98,8 @@ const login = async (req, res) => {
     return sendErrorResponse(res, 500, "Login failed");
   }
 };
+
+// Update password
 const updatePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -127,6 +133,7 @@ const updatePassword = async (req, res) => {
   }
 };
 
+// Update email
 const updateEmail = async (req, res) => {
   try {
     const { newEmail } = req.body;
@@ -170,7 +177,7 @@ const updatePreferences = async (req, res) => {
       return sendErrorResponse(res, 400, "Invalid preference values");
     }
 
-    const user = await User.findById(req.user.id);
+    const user = await UserModel.findById(req.user.id);
     if (!user) return sendErrorResponse(res, 404, "User not found");
 
     if (language) user.preferences.language = language;
