@@ -22,7 +22,6 @@ export const socketService = {
       socket.on('connect', () => {
         console.log('🔌 Socket connected:', socket.id);
 
-        // Auto re-join previously joined conversations
         joinedConversations.forEach((conversationId) => {
           socket.emit('joinConversation', conversationId);
           console.log(`🔁 Re-joined conversation ${conversationId}`);
@@ -45,11 +44,8 @@ export const socketService = {
   },
 
   emit: (event, data) => {
-    if (event === 'joinConversation' && data) {
-      joinedConversations.add(data);
-    } else if (event === 'leaveConversation' && data) {
-      joinedConversations.delete(data);
-    }
+    if (event === 'joinConversation' && data) joinedConversations.add(data);
+    else if (event === 'leaveConversation' && data) joinedConversations.delete(data);
 
     socket?.emit(event, data);
   },
@@ -59,19 +55,15 @@ export const socketService = {
   getSocket: () => socket,
 };
 
-// Add request interceptor to include token in headers
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Add response interceptor to handle token expiration
 API.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -96,37 +88,33 @@ export const apiService = {
     }
   },
 
-login: async ({ email, password }) => {
-  try {
-    const res = await API.post('/auth/login', { email, password });
-    const { user: userData, token } = res.data;
+  login: async ({ email, password }) => {
+    try {
+      const res = await API.post('/auth/login', { email, password });
+      const { user: userData, token } = res.data.data; // ✅ access inside data
 
-    if (!userData || !token) {
-      throw new Error('Invalid login response from server');
+      if (!userData || !token) throw new Error('Invalid login response from server');
+
+      return {
+        success: true,
+        user: { ...userData, id: userData.id || userData._id },
+        token,
+        message: res.data.message || 'Login successful',
+      };
+    } catch (err) {
+      throw new Error(err.response?.data?.message || 'Login failed');
     }
+  },
 
-    return {
-      success: true,
-      user: { ...userData, id: userData.id || userData._id }, // normalize id
-      token,
-      message: res.data.message || 'Login successful',
-    };
-  } catch (err) {
-    throw new Error(err.response?.data?.message || 'Login failed');
-  }
-},
-
-validateToken: async () => {
-  try {
-    const res = await API.get('/auth/validate-token');
-    if (res.data.user) {
-      res.data.user.id = res.data.user.id || res.data.user._id; // normalize
+  validateToken: async () => {
+    try {
+      const res = await API.get('/auth/validate-token');
+      if (res.data.user) res.data.user.id = res.data.user.id || res.data.user._id;
+      return res.data;
+    } catch (err) {
+      throw new Error(err.response?.data?.message || 'Token validation failed');
     }
-    return res.data;
-  } catch (err) {
-    throw new Error(err.response?.data?.message || 'Token validation failed');
-  }
-},
+  },
 
   logout: async () => {
     try {
@@ -138,7 +126,6 @@ validateToken: async () => {
       localStorage.removeItem('currentUser');
     }
   },
-
 
   // ===== USER MANAGEMENT =====
   fetchUserProfile: async () => {
@@ -192,22 +179,6 @@ validateToken: async () => {
     }
   },
 
-  // ===== USER PREFERENCES =====
-  updatePreferences: async ({ language, theme }) => {
-    try {
-      const res = await API.put('/auth/update-preferences', { language, theme });
-      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-      const updatedUser = {
-        ...currentUser,
-        preferences: res.data.preferences || { language: 'english', theme: 'light' },
-      };
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to update preferences');
-    }
-  },
-
   // ===== FRIENDS =====
   getFriends: async (page = 1, limit = 20) => {
     try {
@@ -228,145 +199,79 @@ validateToken: async () => {
   },
 
   sendFriendRequest: async (recipientId) => {
-    console.log('🌐 API: sendFriendRequest called with:', { recipientId });
-    try {
-      if (!recipientId || typeof recipientId !== 'string' || recipientId.trim() === '') {
-        throw new Error('Valid recipient ID is required');
-      }
-      const res = await API.post('/friends/requests', { recipientId });
-      console.log('✅ API: Friend request sent successfully:', res.data);
-      return res.data;
-    } catch (err) {
-      console.error('❌ API: sendFriendRequest error:', err);
-      throw new Error(err.response?.data?.message || 'Failed to send friend request');
+    if (!recipientId || typeof recipientId !== 'string' || recipientId.trim() === '') {
+      throw new Error('Valid recipient ID is required');
     }
+    const res = await API.post('/friends/requests', { recipientId });
+    return res.data;
   },
 
   respondToFriendRequest: async (requestId, action) => {
-    try {
-      const res = await API.post(`/friends/requests/${requestId}/respond`, { action });
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to respond to friend request');
-    }
+    const res = await API.post(`/friends/requests/${requestId}/respond`, { action });
+    return res.data;
   },
 
   cancelFriendRequest: async (requestId) => {
-    try {
-      const res = await API.delete(`/friends/requests/${requestId}`);
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to cancel friend request');
-    }
+    const res = await API.delete(`/friends/requests/${requestId}`);
+    return res.data;
   },
 
   removeFriend: async (friendId) => {
-    try {
-      const res = await API.delete(`/friends/${friendId}`);
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to remove friend');
-    }
+    const res = await API.delete(`/friends/${friendId}`);
+    return res.data;
   },
 
   // ===== CONVERSATIONS =====
   getConversations: async () => {
-    try {
-      const res = await API.get('/messages/conversations');
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to fetch conversations');
-    }
+    const res = await API.get('/messages/conversations');
+    return res.data;
   },
 
   createConversation: async (participantId) => {
-    try {
-      const res = await API.post('/messages/conversations', { participantId });
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to create conversation');
-    }
-  },
-
-  createOrFetchConversation: async (participantId) => {
-    return apiService.createConversation(participantId);
+    const res = await API.post('/messages/conversations', { participantId });
+    return res.data;
   },
 
   getMessages: async (conversationId, page = 1, limit = 50) => {
-    try {
-      const res = await API.get(
-        `/messages/conversations/${conversationId}/messages?page=${page}&limit=${limit}`
-      );
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to fetch messages');
-    }
+    const res = await API.get(`/messages/conversations/${conversationId}/messages?page=${page}&limit=${limit}`);
+    return res.data;
   },
 
   sendMessage: async ({ conversationId, content, type = 'text' }) => {
-    try {
-      const res = await API.post('/messages/send', { conversationId, content, type });
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to send message');
-    }
+    const res = await API.post('/messages/send', { conversationId, content, type });
+    return res.data;
   },
 
   markConversationAsRead: async (conversationId) => {
-    try {
-      const res = await API.put(`/messages/conversations/${conversationId}/read`);
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to mark conversation as read');
-    }
+    const res = await API.put(`/messages/conversations/${conversationId}/read`);
+    return res.data;
   },
 
   getUnreadCount: async () => {
-    try {
-      const res = await API.get('/messages/unread-count');
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to fetch unread count');
-    }
+    const res = await API.get('/messages/unread-count');
+    return res.data;
   },
 
   searchMessages: async (query, conversationId = null) => {
-    try {
-      const params = new URLSearchParams({ query });
-      if (conversationId) params.append('conversationId', conversationId);
-      const res = await API.get(`/messages/search?${params.toString()}`);
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to search messages');
-    }
+    const params = new URLSearchParams({ query });
+    if (conversationId) params.append('conversationId', conversationId);
+    const res = await API.get(`/messages/search?${params.toString()}`);
+    return res.data;
   },
 
   editMessage: async (messageId, content) => {
-    try {
-      const res = await API.put(`/messages/messages/${messageId}`, { content });
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to edit message');
-    }
+    const res = await API.put(`/messages/messages/${messageId}`, { content });
+    return res.data;
   },
 
   deleteMessage: async (messageId) => {
-    try {
-      const res = await API.delete(`/messages/messages/${messageId}`);
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to delete message');
-    }
+    const res = await API.delete(`/messages/messages/${messageId}`);
+    return res.data;
   },
 
-  // ===== HEALTH =====
   healthCheck: async () => {
-    try {
-      const res = await axios.get(`${BACKEND_URL}/health`);
-      return res.data;
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Health check failed');
-    }
+    const res = await axios.get(`${BACKEND_URL}/health`);
+    return res.data;
   },
 };
 
